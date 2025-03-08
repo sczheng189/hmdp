@@ -13,6 +13,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -31,7 +32,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Override
     public Result queryById(Long id) {
         //1.查询redis商库缓存
-        String shopJson = stringRedisTemplate.opsForValue().get(RedisConstants.CACHE_SHOP_KEY + id);
+        String shopJson = stringRedisTemplate.opsForValue().get(RedisConstants.CACHE_SHOP_TTL + id);
         //2.判断是否存在
         if (StrUtil.isNotBlank(shopJson)) {
             //hutool的json工具类转换为对象
@@ -50,6 +51,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         //6.存在则写入缓存
         stringRedisTemplate.opsForValue().set(RedisConstants.CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop));
+        stringRedisTemplate.expire(RedisConstants.CACHE_SHOP_KEY + id, RedisConstants.LOCK_SHOP_TTL, TimeUnit.MINUTES);
         log.info("写入缓存数据:{}", JSONUtil.toJsonStr(shop));
         //7.返回数据
         return Result.ok(shop);
